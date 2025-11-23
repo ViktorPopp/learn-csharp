@@ -2,7 +2,7 @@
 {
     class Item
     {
-        public Item(string content) { Content = content; }
+        public Item(string content) => Content = content;
 
         public string Content { get; set; }
         public bool Checked { get; set; }
@@ -16,75 +16,89 @@
         {
             while (true)
             {
-                try
+                var input = InputString("Enter command: ");
+                switch (input)
                 {
-                    Console.Write("Enter command: ");
-                    string? command = Console.ReadLine();
-                    if (string.IsNullOrWhiteSpace(command))
-                    {
-                        continue;
-                    }
-                    switch (command)
-                    {
-                        case "add":
-                            Console.Write("Enter todo: ");
-                            string? todo = Console.ReadLine();
-                            Todos.Add(new Item(todo));
-                            break;
+                    case "add":
+                        AddItem();
+                        break;
 
-                        case "list":
-                            for (int i = 0; i < Todos.Count; i++)
-                            {
-                                Console.WriteLine($"{i} [{(Todos[i].Checked ? 'X' : ' ')}] {Todos[i].Content}");
-                            }
-                            break;
+                    case "list":
+                        ListItems();
+                        break;
 
-                        case "check":
-                            {
-                                Console.Write("Enter index: ");
-                                string? index = Console.ReadLine();
-                                if (!int.TryParse(index, out int idx))
-                                {
-                                    Console.WriteLine("Invalid index.");
-                                }
-                                else if (idx < 0 || idx >= Todos.Count)
-                                {
-                                    Console.WriteLine("Index out of range.");
-                                }
-                                else
-                                {
-                                    Todos[idx].Checked = true;
-                                }
-                            }
-                            break;
-                        case "remove":
-                            {
-                                Console.Write("Enter index: ");
-                                string? index = Console.ReadLine();
-                                if (!int.TryParse(index, out int idx))
-                                {
-                                    Console.WriteLine("Invalid index.");
-                                }
-                                else if (idx < 0 || idx >= Todos.Count)
-                                {
-                                    Console.WriteLine("Index out of range.");
-                                }
-                                else
-                                {
-                                    Todos.RemoveAt(idx);
-                                }
-                            }
-                            break;
+                    case "check":
+                        CheckItem();
+                        break;
 
-                        case "exit":
-                            return 0;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"An error occurred: {ex}");
+                    case "remove":
+                        RemoveItem();
+                        break;
+
+                    case "exit":
+                        return 0;
+
+                    default:
+                        Console.WriteLine("Valid commands are 'add', 'list', 'check', 'remove' and 'exit'");
+                        break;
                 }
             }
+        }
+
+        public static void ListItems()
+        {
+            for (int i = 0; i < Todos.Count; i++)
+            {
+                var item = Todos[i];
+                Console.WriteLine($"{i} [{(item.Checked ? 'X' : ' ')}] {item.Content}");
+            }
+        }
+
+        public static void AddItem()
+        {
+            var content = InputString("Enter content: ");
+            Todos.Add(new Item(content));
+        }
+
+        public static void CheckItem()
+        {
+            var input = InputString("Enter index: ");
+            if (!int.TryParse(input, out int index))
+            {
+                Console.WriteLine("Error: Invalid index");
+            }
+            else if (index < 0 || index >= Todos.Count)
+            {
+                Console.WriteLine("Error: Index out of range");
+            }
+            else
+            {
+                Todos[index].Checked = true;
+            }
+        }
+
+        public static void RemoveItem()
+        {
+            var input = InputString("Enter index: ");
+            if (!int.TryParse(input, out int index))
+            {
+                Console.WriteLine("Error: Invalid index");
+            }
+            else if (index < 0 || index >= Todos.Count)
+            {
+                Console.WriteLine("Error: Index out of range");
+            }
+            else
+            {
+                Todos.RemoveAt(index);
+            }
+        }
+
+        private static string InputString(string message)
+        {
+            Console.Write(message);
+            var input = Console.ReadLine();
+            return string.IsNullOrEmpty(input) ? "" : input;
         }
     }
 }
