@@ -1,5 +1,7 @@
 ﻿using Microsoft.Data.Sqlite;
 
+// This code is not very good, so please, spare yourself and do not read it.
+
 namespace TodoApp
 {
     class Program
