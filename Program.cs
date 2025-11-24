@@ -2,14 +2,6 @@
 
 namespace TodoApp
 {
-    class Item
-    {
-        public Item(string content) => Content = content;
-
-        public string Content { get; set; }
-        public bool Checked { get; set; }
-    }
-
     class Program
     {
         private static SqliteConnection Connection = new SqliteConnection("Data Source=todo.db");
@@ -26,6 +18,7 @@ namespace TodoApp
                         AddItem();
                         break;
 
+                    case "ls":
                     case "list":
                         ListItems();
                         break;
@@ -34,6 +27,7 @@ namespace TodoApp
                         CheckItem();
                         break;
 
+                    case "rm":
                     case "remove":
                         RemoveItem();
                         break;
@@ -52,7 +46,7 @@ namespace TodoApp
         private static void Initialize()
         {
             Connection.Open();
-            var cmd = Connection.CreateCommand();
+            using var cmd = Connection.CreateCommand();
             cmd.CommandText = """
             CREATE TABLE IF NOT EXISTS todos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,7 +65,7 @@ namespace TodoApp
 
         public static void ListItems()
         {
-            var cmd = Connection.CreateCommand();
+            using var cmd = Connection.CreateCommand();
             cmd.CommandText = """
             SELECT * from todos
             """;
@@ -90,7 +84,7 @@ namespace TodoApp
         public static void AddItem()
         {
             var content = InputString("Enter content: ");
-            var cmd = Connection.CreateCommand();
+            using var cmd = Connection.CreateCommand();
             cmd.CommandText = """
             INSERT INTO todos (content, checked)
             VALUES ($content, FALSE);
@@ -109,9 +103,13 @@ namespace TodoApp
             else
             {
                 using var cmd = Connection.CreateCommand();
-                cmd.CommandText = "UPDATE todos SET checked = 1 WHERE id = $id";
+                cmd.CommandText = "UPDATE todos SET checked = TRUE WHERE id = $id";
                 cmd.Parameters.AddWithValue("$id", index);
-                cmd.ExecuteNonQuery();
+                int affected = cmd.ExecuteNonQuery();
+                if (affected == 0)
+                {
+                    Console.WriteLine("Error: Could not check todo");
+                }
             }
 
         }
