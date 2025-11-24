@@ -1,4 +1,6 @@
-﻿namespace TodoApp
+﻿using Microsoft.Data.Sqlite;
+
+namespace TodoApp
 {
     class Item
     {
@@ -10,10 +12,11 @@
 
     class Program
     {
-        private static List<Item> Todos = new List<Item>();
+        private static SqliteConnection Connection = new SqliteConnection("Data Source=todo.db");
 
         public static int Main()
         {
+            Initialize();
             while (true)
             {
                 var input = InputString("Enter command: ");
@@ -36,7 +39,8 @@
                         break;
 
                     case "exit":
-                        return 0;
+                        Exit(0);
+                        break;
 
                     default:
                         Console.WriteLine("Valid commands are 'add', 'list', 'check', 'remove' and 'exit'");
@@ -45,19 +49,54 @@
             }
         }
 
+        private static void Initialize()
+        {
+            Connection.Open();
+            var cmd = Connection.CreateCommand();
+            cmd.CommandText = """
+            CREATE TABLE IF NOT EXISTS todos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                content TEXT NOT NULL,
+                checked BOOLEAN
+            );
+            """;
+            cmd.ExecuteNonQuery();
+        }
+
+        private static void Exit(int error)
+        {
+            Connection.Dispose();
+            Environment.Exit(error);
+        }
+
         public static void ListItems()
         {
-            for (int i = 0; i < Todos.Count; i++)
+            var cmd = Connection.CreateCommand();
+            cmd.CommandText = """
+            SELECT * from todos
+            """;
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
             {
-                var item = Todos[i];
-                Console.WriteLine($"{i} [{(item.Checked ? 'X' : ' ')}] {item.Content}");
+                var id = reader.GetInt32(0);
+                var content = reader.GetString(1);
+                var checkedFlag = reader.GetBoolean(2);
+
+                Console.WriteLine($"{id} [{(checkedFlag ? 'X' : ' ')}] {content}");
             }
+
         }
 
         public static void AddItem()
         {
             var content = InputString("Enter content: ");
-            Todos.Add(new Item(content));
+            var cmd = Connection.CreateCommand();
+            cmd.CommandText = """
+            INSERT INTO todos (content, checked)
+            VALUES ($content, FALSE);
+            """;
+            cmd.Parameters.AddWithValue("$content", content);
+            cmd.ExecuteNonQuery();
         }
 
         public static void CheckItem()
@@ -67,14 +106,14 @@
             {
                 Console.WriteLine("Error: Invalid index");
             }
-            else if (index < 0 || index >= Todos.Count)
-            {
-                Console.WriteLine("Error: Index out of range");
-            }
             else
             {
-                Todos[index].Checked = true;
+                using var cmd = Connection.CreateCommand();
+                cmd.CommandText = "UPDATE todos SET checked = 1 WHERE id = $id";
+                cmd.Parameters.AddWithValue("$id", index);
+                cmd.ExecuteNonQuery();
             }
+
         }
 
         public static void RemoveItem()
@@ -84,13 +123,14 @@
             {
                 Console.WriteLine("Error: Invalid index");
             }
-            else if (index < 0 || index >= Todos.Count)
+            using var cmd = Connection.CreateCommand();
+            cmd.CommandText = "DELETE FROM todos WHERE id = $id";
+            cmd.Parameters.AddWithValue("$id", index);
+
+            int affected = cmd.ExecuteNonQuery();
+            if (affected == 0)
             {
-                Console.WriteLine("Error: Index out of range");
-            }
-            else
-            {
-                Todos.RemoveAt(index);
+                Console.WriteLine("Error: Could not delete todo");
             }
         }
 
